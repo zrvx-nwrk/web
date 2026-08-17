@@ -58,6 +58,9 @@ function initialTheme(): Theme {
 
 export default function App() {
   const [theme, setTheme] = useState<Theme>(initialTheme)
+  const [scrolled, setScrolled] = useState(
+    () => typeof window !== 'undefined' && window.scrollY >= window.innerHeight
+  )
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -72,12 +75,27 @@ export default function App() {
     )
   }, [])
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY >= window.innerHeight)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   return (
     <div className="min-h-screen bg-bg text-fg">
-      {/* Header */}
-      <header className="mx-auto flex w-full max-w-[860px] items-baseline justify-between px-6 pt-8">
+      {/* Header — hidden until the first viewport has passed. Still in the DOM for machines. */}
+      <header
+        aria-hidden={!scrolled ? true : undefined}
+        className={`fixed left-1/2 top-0 z-50 flex w-full max-w-[860px] -translate-x-1/2 items-baseline justify-between border-b border-line bg-bg/90 px-6 py-4 backdrop-blur-sm transition-[transform,opacity] duration-300 ease-out ${
+          scrolled
+            ? 'translate-y-0 opacity-100 pointer-events-auto'
+            : '-translate-y-full opacity-0 pointer-events-none'
+        }`}
+      >
         <a
           href="#top"
+          tabIndex={scrolled ? 0 : -1}
           className="mono text-[13px] font-medium tracking-[0.32em] transition-colors hover:text-accent"
         >
           ZRVX
@@ -86,6 +104,7 @@ export default function App() {
           <span className="tracking-[0.18em]">EXPERIMENT / 2026</span>
           <button
             type="button"
+            tabIndex={scrolled ? 0 : -1}
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             aria-label={`switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             className="uppercase tracking-[0.16em] hover:text-fg"
@@ -97,7 +116,7 @@ export default function App() {
 
       <main id="top" className="mx-auto w-full max-w-[860px] px-6">
         {/* 1 — HERO */}
-        <section className="pt-24 pb-24 sm:pt-32 sm:pb-32">
+        <section className="min-h-screen pt-24 pb-24 sm:pt-32 sm:pb-32">
           <Label className="mb-10 block">Early exploration</Label>
           <h1 className="text-[clamp(3.5rem,14vw,8.5rem)] font-semibold leading-[0.9] tracking-[-0.05em]">
             ZRVX
@@ -122,7 +141,7 @@ export default function App() {
         </section>
 
         {/* 2 — THE IDEA */}
-        <Section label="The idea">
+        <Section label="The idea" className="min-h-screen">
           <h2 className="max-w-[24ch] text-[clamp(1.75rem,5vw,3rem)] font-semibold leading-[1.05] tracking-[-0.025em]">
             Humans built the internet. What happens when machines start using it
             to buy things?
@@ -135,7 +154,7 @@ export default function App() {
         </Section>
 
         {/* 3 — HUMAN / MACHINE CONTRAST */}
-        <Section label="Two kinds of users">
+        <Section label="Two kinds of users" className="min-h-screen">
           <div className="grid grid-cols-2 gap-px overflow-hidden border border-line bg-line max-[560px]:grid-cols-1">
             <div className="bg-bg p-8 sm:p-10">
               <Label>Humans</Label>
@@ -159,7 +178,7 @@ export default function App() {
         </Section>
 
         {/* 4 — PRINCIPLE (strongest moment) */}
-        <section className="border-t border-line py-28 sm:py-40">
+        <section className="min-h-screen border-t border-line py-28 sm:py-40">
           <p className="text-[clamp(2.2rem,7vw,4.5rem)] font-semibold leading-[1.02] tracking-[-0.035em]">
             Humans are the audience.
             <br />
@@ -168,7 +187,7 @@ export default function App() {
         </section>
 
         {/* 6 — EARLY STATUS */}
-        <Section label="Status">
+        <Section label="Status" className="min-h-screen">
           <h2 className="text-[clamp(1.75rem,5vw,3rem)] font-semibold leading-[1.05] tracking-[-0.025em]">
             Nothing to use yet.
           </h2>
@@ -226,6 +245,26 @@ export default function App() {
           </nav>
         </div>
       </footer>
+
+      {/* Floating advance button */}
+      <button
+        type="button"
+        aria-label="Next section"
+        onClick={() => {
+          const targets = Array.from(document.querySelectorAll('main section, footer'))
+          const current = targets.findIndex((t) => {
+            const rect = t.getBoundingClientRect()
+            return rect.top <= 0 && rect.bottom > 0
+          })
+          const nextIndex = current + 1 < targets.length ? current + 1 : 0
+          const next = targets[nextIndex]
+          const margin = parseInt(window.getComputedStyle(next).scrollMarginTop || '0', 10)
+          window.scrollTo({ top: next.offsetTop + margin, behavior: 'smooth' })
+        }}
+        className="fixed bottom-6 right-6 z-40 border border-line-strong bg-bg/90 px-3 py-3 text-faint backdrop-blur-sm transition hover:border-fg hover:text-fg"
+      >
+        <span className="text-[13px]">↓</span>
+      </button>
     </div>
   )
 }

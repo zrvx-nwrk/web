@@ -52,6 +52,20 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-snap-type: y proximity;
+}
+
+section {
+  scroll-snap-align: start;
+}
+
+main section:not(:first-of-type) {
+  scroll-margin-top: 3.5rem;
+}
+
+footer {
+  scroll-snap-align: end;
 }
 
 body {
